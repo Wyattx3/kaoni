@@ -1,0 +1,27 @@
+{
+  "name": "kaoni",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "bot": "node bot.js",
+    "db:init": "node db-init.js",
+    "pages:build": "npx @cloudflare/next-on-pages",
+    "deploy": "npx @cloudflare/next-on-pages && npx wrangler pages deploy .vercel/output/static --project-name=kaoni"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
+    "html-to-image": "^1.11.13",
+    "next": "^14.2.0",
+    "node-telegram-bot-api": "^0.66.0",
+    "pg": "^8.21.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0"
+  },
+  "devDependencies": {
+    "@cloudflare/next-on-pages": "^1.13.16",
+    "wrangler": "^4.93.0"
+  }
+}
