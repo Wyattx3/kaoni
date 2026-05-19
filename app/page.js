@@ -2,8 +2,51 @@
 import { useState, useEffect, useRef } from 'react';
 import { toPng } from 'html-to-image';
 import { IconPlus, IconMinus, IconChevronLeft, IconEdit, IconTrash, IconImage, IconUpload, IconPackage, IconShoppingBag, IconAlertTriangle, IconCheck, IconSearch, IconReceipt } from './components/Icons';
+import { getProducts, addProduct as dbAddProduct, updateProduct as dbUpdateProduct, deleteProduct as dbDeleteProduct, getSales, createSale } from './lib/db-client';
+
+const AUTH_PASSWORD = 'kaynayonthebed';
 
 export default function Home() {
+  const [authed, setAuthed] = useState(false);
+  const [authInput, setAuthInput] = useState('');
+  const [authError, setAuthError] = useState('');
+
+  const checkAuth = () => {
+    if (typeof window === 'undefined') return false;
+    const v = localStorage.getItem('kaoni_auth');
+    if (v === 'yes') { setAuthed(true); return true; }
+    return false;
+  };
+
+  useEffect(() => { checkAuth(); }, []);
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    if (authInput === AUTH_PASSWORD) {
+      localStorage.setItem('kaoni_auth', 'yes');
+      setAuthed(true);
+      setAuthError('');
+    } else {
+      setAuthError('Password မှားနေပါတယ်');
+    }
+  };
+
+  if (!authed) {
+    return (
+      <div className="login-screen">
+        <div className="login-card">
+          <img src="/logo.jpg" alt="Logo" className="login-logo" />
+          <h1>KAONI</h1>
+          <p>Password ထည့်ပါ</p>
+          <form onSubmit={handleLogin}>
+            <input type="password" placeholder="Password" value={authInput} onChange={e=>setAuthInput(e.target.value)} autoFocus required />
+            {authError && <span className="login-error">{authError}</span>}
+            <button type="submit">ဝင်ရန်</button>
+          </form>
+        </div>
+      </div>
+    );
+  }
   const [products, setProducts] = useState([]);
   const [tab, setTab] = useState('products');
   const [view, setView] = useState('list');
@@ -21,11 +64,17 @@ export default function Home() {
   const [detailSale, setDetailSale] = useState(null);
   const invoiceRef = useRef(null);
 
-  useEffect(() => { fetch('/api/products').then(r=>r.json()).then(d=>{if(Array.isArray(d))setProducts(d)}).catch(()=>{}); }, []);
-  useEffect(() => { if(tab==='history') fetch('/api/sales').then(r=>r.json()).then(d=>{if(Array.isArray(d))setSales(d)}).catch(()=>{}); }, [tab]);
+  useEffect(() => { if(!checkAuth()) return; getProducts().then(d=>setProducts(d)).catch(()=>{}); }, []);
+  useEffect(() => { if(tab==='history'&&checkAuth()) getSales().then(d=>setSales(d)).catch(()=>{}); }, [tab]);
 
-  const saveProduct = async (action, payload) => { try { const r=await fetch('/api/products',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,...payload})}); return await r.json(); } catch(e){return null;} };
-  const refreshProducts = async () => { try { const r=await fetch('/api/products'); const d=await r.json(); if(Array.isArray(d)) setProducts(d); } catch(e){} };
+  const saveProduct = async (action, payload) => {
+    try {
+      if (action === 'add') { await dbAddProduct(payload.product); }
+      else if (action === 'update') { await dbUpdateProduct(payload.product.id, payload.product); }
+      else if (action === 'delete') { await dbDeleteProduct(payload.id); }
+    } catch(e) { console.error(e); }
+  };
+  const refreshProducts = async () => { try { const d = await getProducts(); setProducts(d); } catch(e){} };
   const fmt = (num) => Number(num).toLocaleString('en-US');
 
   const summary = products.reduce((a,p)=>({
@@ -73,7 +122,7 @@ export default function Home() {
 
   const confirmSale = async () => {
     if(invoiceRef.current){try{const url=await toPng(invoiceRef.current,{quality:1,pixelRatio:3,backgroundColor:'#ffffff'});const a=document.createElement('a');a.download=`invoice-${Date.now()}.png`;a.href=url;a.click();}catch(e){console.log(e)}}
-    try{await fetch('/api/sales',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'create',sale:{items:invoiceData.items,totalAmount:invoiceData.totalAmount,totalProfit:invoiceData.totalProfit,totalExtra:invoiceData.totalExtra,totalDiscount:invoiceData.totalDiscount,totalItems:invoiceData.totalItems,buyerName:customerName.trim()||''}})});await refreshProducts();setSellCart([]);setInvoiceData(null);setCustomerName('');setSellView('browse');}catch(e){}
+    try{await createSale({items:invoiceData.items,totalAmount:invoiceData.totalAmount,totalProfit:invoiceData.totalProfit,totalExtra:invoiceData.totalExtra,totalDiscount:invoiceData.totalDiscount,totalItems:invoiceData.totalItems,buyerName:customerName.trim()||''});await refreshProducts();setSellCart([]);setInvoiceData(null);setCustomerName('');setSellView('browse');}catch(e){console.error(e)}
   };
   const cancelSale = () => { setInvoiceData(null); setSellView('checkout'); };
 
