@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
 
-export const runtime = 'edge';
-
 const sql = neon('postgresql://neondb_owner:npg_A2xJkiSKXY9g@ep-sweet-art-aoeszlpj-pooler.c-2.ap-southeast-1.aws.neon.tech/neondb?sslmode=require');
 
 function formatSale(row) {
