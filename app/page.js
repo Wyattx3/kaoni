@@ -10,15 +10,32 @@ export default function Home() {
   const [authed, setAuthed] = useState(false);
   const [authInput, setAuthInput] = useState('');
   const [authError, setAuthError] = useState('');
+  const [products, setProducts] = useState([]);
+  const [tab, setTab] = useState('products');
+  const [view, setView] = useState('list');
+  const [editingId, setEditingId] = useState(null);
+  const [showDelete, setShowDelete] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
+  const [detailProduct, setDetailProduct] = useState(null);
+  const [form, setForm] = useState({ name:'', images:[], costPrice:'', sellingPrice:'', quantity:'1', extraCharge:'0', extraChargeNote:'', discount:'0', discountNote:'' });
+  const [sellCart, setSellCart] = useState([]);
+  const [sellSearch, setSellSearch] = useState('');
+  const [sellView, setSellView] = useState('browse');
+  const [invoiceData, setInvoiceData] = useState(null);
+  const [customerName, setCustomerName] = useState('');
+  const [sales, setSales] = useState([]);
+  const [detailSale, setDetailSale] = useState(null);
+  const invoiceRef = useRef(null);
 
-  const checkAuth = () => {
-    if (typeof window === 'undefined') return false;
-    const v = localStorage.getItem('kaoni_auth');
-    if (v === 'yes') { setAuthed(true); return true; }
-    return false;
-  };
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const v = localStorage.getItem('kaoni_auth');
+      if (v === 'yes') { setAuthed(true); }
+    }
+  }, []);
 
-  useEffect(() => { checkAuth(); }, []);
+  useEffect(() => { if(authed) getProducts().then(d=>setProducts(d)).catch(()=>{}); }, [authed]);
+  useEffect(() => { if(tab==='history'&&authed) getSales().then(d=>setSales(d)).catch(()=>{}); }, [tab, authed]);
 
   const handleLogin = (e) => {
     e.preventDefault();
@@ -47,25 +64,6 @@ export default function Home() {
       </div>
     );
   }
-  const [products, setProducts] = useState([]);
-  const [tab, setTab] = useState('products');
-  const [view, setView] = useState('list');
-  const [editingId, setEditingId] = useState(null);
-  const [showDelete, setShowDelete] = useState(false);
-  const [deletingId, setDeletingId] = useState(null);
-  const [detailProduct, setDetailProduct] = useState(null);
-  const [form, setForm] = useState({ name:'', images:[], costPrice:'', sellingPrice:'', quantity:'1', extraCharge:'0', extraChargeNote:'', discount:'0', discountNote:'' });
-  const [sellCart, setSellCart] = useState([]);
-  const [sellSearch, setSellSearch] = useState('');
-  const [sellView, setSellView] = useState('browse');
-  const [invoiceData, setInvoiceData] = useState(null);
-  const [customerName, setCustomerName] = useState('');
-  const [sales, setSales] = useState([]);
-  const [detailSale, setDetailSale] = useState(null);
-  const invoiceRef = useRef(null);
-
-  useEffect(() => { if(!checkAuth()) return; getProducts().then(d=>setProducts(d)).catch(()=>{}); }, []);
-  useEffect(() => { if(tab==='history'&&checkAuth()) getSales().then(d=>setSales(d)).catch(()=>{}); }, [tab]);
 
   const saveProduct = async (action, payload) => {
     try {
